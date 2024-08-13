@@ -13,6 +13,7 @@ class State extends Model
     protected $fillable = [
         'name',
         "country_id",
+        "status"
 
     ];
 

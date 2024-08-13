@@ -13,6 +13,7 @@ class Country extends Model
         'continent',
         'pupulation',
         'language',
-        'currency'
+        'currency',
+        "status"
     ];
 }

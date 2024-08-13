@@ -3,51 +3,55 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Country;
 use Illuminate\Http\Request;
+use App\Models\Country;
 
-class CountryController extends Controller
-{
-    public function list() {
-        $countries = Country::orderBy('name', 'asc')->get();
 
-        $list = [];
+class CountryController extends Controller {
+    
+	public function list() {
 
-        foreach ($countries as $country) {
+    		$countries = Country::orderBy('name', 'asc')->get();
 
-            $object = [
-                'id' => $country->id,
-				'name' => $country->name,
-                'continent' => $this->getContinentName($country),
-                'population' => $country->population,
-                'language' => $country->language,
-                'currency' => $country->currency,
-            ];
+    		$list = [];
 
-            array_push($list, $object);
-        }
+    		foreach ($countries as $country) {
 
-        return response()->json($list);
-    }
+        	$object = [
+            	'id' => $country->id,
+            	'name' => $country->name,
+            	'continent' => $this->getContinentName($country),
+            	'population' => $country->population,
+            	'language' => $country->language,
+            	'currency' => $country->currency,
+                "status"=> $country->status
+        	];
 
-    public function item($id) {
+        		array_push($list, $object);
+    		}
+
+    		return response()->json($list);
+	}
+
+	public function item($id) {
 
     	$country = Country::findOrFail($id);
 
     	$object = [
         	'id' => $country->id,
         	'name' => $country->name,
-            'continent' => $country->continent,
-            'population' => $country->population,
-            'language' => $country->language,
-            'currency' => $country->currency,
-        	
+        	'continent' => $country->continent,
+        	'language' => $country->language,
+        	'currency' => $country->currency,
+        	'created_at' => $country->created_at,
+        	'updated_at' => $country->updated_at,
+            "status"=> $country->status
     	];
 
     	return response()->json($object);
 	}
 
-    public function create(Request $request) {
+	public function create(Request $request) {
 
     	$data = $request->validate([
             'name' => 'required',
@@ -58,7 +62,7 @@ class CountryController extends Controller
     	]);
    	 
     	$country = Country::create([
-            'name' => $data['name'],
+            'name'=> $data['name'],
         	'continent' => $data['continent'],
         	'population' => $data['population'],
         	'language' => $data['language'],
@@ -80,91 +84,96 @@ class CountryController extends Controller
             	'message' => 'There was an error saving data',
         	];
     	}
-	}   
+	}
 
-    public function update(Request $request) 
-    {
-        try {
-            // Validar los datos de entrada
-            $data = $request->validate([
-                'id' => 'required|numeric',
-                'name' => 'required|string',
-                'continent' => 'required|numeric',
-                'population' => 'required|numeric',
-                'language' => 'required|string',
-                'currency' => 'required|string',
-            ]);
+	public function update(Request $request) {
 
-            // Buscar el país por id
-            $country = Country::find($data['id']);
+    	$data = $request->validate([
+        	'id' => 'required|numeric',
+            'name' => 'required',
+        	'continent' => 'required|numeric',
+        	'population' => 'required',
+        	'language' => 'required',
+        	'currency' => 'required',
+            "status"=> "required"
+    	]);
 
-            if (!$country) {
-                return response()->json([
-                    'response' => 0,
-                    'message' => 'Country not found',
-                ], 404);
-            }
+    	$country = Country::where('id', '=', $data['id'])->first();
 
-            // Actualizar los campos del país
-            $country->name = $data['name'];
-            $country->continent = $data['continent'];
-            $country->population = $data['population'];
-            $country->language = $data['language'];
-            $country->currency = $data['currency'];
+    	$country->name = $data['name'];
+    	$country->continent = $data['continent'];
+    	$country->population = $data['population'];
+    	$country->language = $data['language'];
+    	$country->currency = $data['currency'];
+        $country->status = $data['status'];
 
-            // Guardar los cambios
-            if ($country->save()) {
-                // Refrescar el modelo
-                $country->refresh();
+    	if($country->save()) {
 
-                // Respuesta exitosa
-                return response()->json([
-                    'response' => 1,
-                    'message' => 'Country updated successfully',
-                    'country' => $country
-                ]);
-            } else {
-                // Respuesta en caso de error al guardar
-                return response()->json([
-                    'response' => 0,
-                    'message' => 'There was an error saving data',
-                ], 500);
-            }
-        } catch (\Exception $e) {
-            // Manejo de excepciones generales
-            return response()->json([
-                'response' => 0,
-                'message' => 'An error occurred: ' . $e->getMessage(),
-            ], 500);
-        }
-    }
-    public function getContinentName($country) {
-        switch ($country->continent) {
-            case 1:
-                $continent_name = 'Africa';
-                break;
-            case 2:
-                $continent_name = 'Antartida';
-                break;
-            case 3:
-                $continent_name = 'Norteamerica';
-                break;
-            case 4:
-                $continent_name = 'Sudamerica';
-                break;
-            case 5:
-                $continent_name = 'Asia';
-                break;
-            case 6:
-                $continent_name = 'Europa';
-                break;
-            case 7:
-                $continent_name = 'Oceania';
-                break;
-            default:
-                $continent_name = 'Pangea';
-                break;
-        }
-        return $continent_name;
-    }
+        	$country->refresh();
+
+        	$response = [
+            	'response' => 1,
+            	'message' => 'country updated successfully successfully',
+            	'country' => $country
+        	];
+
+        	return response()->json($response);
+    	} else {
+        	$response = [
+            	'response' => 0,
+            	'message' => 'There was an error saving data',
+        	];
+    	}
+	}
+	public function delete($id) {
+		$country = Country::findOrFail($id);
+	
+		// Cambiar el valor de 'status' de 1 a 0
+		$country->status = 0;
+	
+		if ($country->save()) {
+			$response = [
+				'response' => 1,
+				'message' => 'country status updated to 0 successfully',
+			];
+			return response()->json($response);
+		} else {
+			$response = [
+				'response' => 0,
+				'message' => 'There was an error updating the country status',
+			];
+			return response()->json($response);
+		}
+	}
+	public function getContinentName($country) {
+
+    	switch ($country->continent) {
+        	case 1:
+            	$continent_name = 'África';
+            	break;
+        	case 2:
+            	$continent_name = 'Antartida';
+            	break;
+        	case 3:
+            	$continent_name = 'Norteamérica';
+            	break;
+        	case 4:
+            	$continent_name = 'Sudamérica';
+            	break;
+        	case 5:
+            	$continent_name = 'Asia';
+            	break;
+        	case 6:
+            	$continent_name = 'Europa';
+            	break;
+        	case 7:
+            	$continent_name = 'Oceanía';
+            	break;
+        	default:
+            	$continent_name = 'Pangea';
+            	break;
+    	}
+
+    	return $continent_name;
+	}
 }
